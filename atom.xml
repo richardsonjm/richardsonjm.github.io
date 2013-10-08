@@ -4,7 +4,7 @@
   <title><![CDATA[My Octopress Blog]]></title>
   <link href="http://richardsonjm.github.io/atom.xml" rel="self"/>
   <link href="http://richardsonjm.github.io/"/>
-  <updated>2013-09-25T09:19:46-04:00</updated>
+  <updated>2013-10-07T22:10:53-04:00</updated>
   <id>http://richardsonjm.github.io/</id>
   <author>
     <name><![CDATA[Your Name]]></name>
@@ -12,6 +12,49 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[tdd]]></title>
+    <link href="http://richardsonjm.github.io/blog/2013/10/07/tdd/"/>
+    <updated>2013-10-07T21:21:00-04:00</updated>
+    <id>http://richardsonjm.github.io/blog/2013/10/07/tdd</id>
+    <content type="html"><![CDATA[<h1>An introduction to TDD</h1>
+
+<p>We have been doing a lot of Test Driven Development (TDD) at <a href="http://flatironschool.com/">Flatiron</a> the last few days. This <a href="https://speakerdeck.com/lvrug/introduction-to-tdd-jason-arhart">blog</a> post from Jason Arhart at the Las Vegas Ruby Group outlines some rules of TDD that will be good to keep in mind, especially as we get involved with more complicated projects.</p>
+
+<p>Given that we have been writing code primarily to answer tests at this point (as opposed to writing the tests ourselves) this first rule hadn&rsquo;t totally sunk in:</p>
+
+<ul>
+<li>Never implement functionality until you have a failing test for it.</li>
+</ul>
+
+
+<p>In other words, the first step after concieving a feature is to write a test for that feature, and coding the actual feature itself.</p>
+
+<ul>
+<li>Only write enough of your test to make it fail</li>
+</ul>
+
+
+<p>This one was more intuitive for me. Keep the test as simple as possible so that the test functions as an aid to good development instead of a hinderance.</p>
+
+<ul>
+<li>Only write enough production code to make your test pass.</li>
+</ul>
+
+
+<p>As a corollary to the previous rule, this also make sense. In both the test and the production code, the code should be a simple and efficient as possible.</p>
+
+<ul>
+<li>Never refactor unless your tests are passing</li>
+</ul>
+
+
+<p>This final rule is my favorite. As I struggle to write elegant code, it&rsquo;s comforting to know that at the start the only thing that matters is that the code works.</p>
+
+<p>I also really appreciate the philosophy behind this. Make it work first, then make it beautiful. This is also a good way to think about writing. Instead of perseverating over each sentence, just make sure to get all the ideas out. Then and only then, go back and make it eloquent.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[hello world]]></title>
