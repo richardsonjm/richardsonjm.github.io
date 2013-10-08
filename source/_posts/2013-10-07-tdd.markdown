@@ -1,0 +1,36 @@
+---
+layout: post
+title: "tdd"
+date: 2013-10-07 21:21
+comments: true
+categories: 
+---
+
+#An introduction to TDD
+
+We have been doing a lot of Test Driven Development (TDD) at [Flatiron](http://flatironschool.com/) the last few days. This [blog](https://speakerdeck.com/lvrug/introduction-to-tdd-jason-arhart) post from Jason Arhart at the Las Vegas Ruby Group outlines some rules of TDD that will be good to keep in mind, especially as we get involved with more complicated projects.
+
+Given that we have been writing code primarily to answer tests at this point (as opposed to writing the tests ourselves) this first rule hadn't totally sunk in:
+
+- Never implement functionality until you have a failing test for it. 
+
+In other words, the first step after concieving a feature is to write a test for that feature, and coding the actual feature itself. 
+
+- Only write enough of your test to make it fail
+
+This one was more intuitive for me. Keep the test as simple as possible so that the test functions as an aid to good development instead of a hinderance. 
+
+- Only write enough production code to make your test pass.
+
+As a corollary to the previous rule, this also make sense. In both the test and the production code, the code should be a simple and efficient as possible. 
+
+- Never refactor unless your tests are passing
+
+This final rule is my favorite. As I struggle to write elegant code, it's comforting to know that at the start the only thing that matters is that the code works. 
+
+I also really appreciate the philosophy behind this. Make it work first, then make it beautiful. This is also a good way to think about writing. Instead of perseverating over each sentence, just make sure to get all the ideas out. Then and only then, go back and make it eloquent. 
+
+
+
+
+ 
