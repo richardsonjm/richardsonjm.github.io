@@ -4,7 +4,7 @@
   <title><![CDATA[My Octopress Blog]]></title>
   <link href="http://richardsonjm.github.io/atom.xml" rel="self"/>
   <link href="http://richardsonjm.github.io/"/>
-  <updated>2013-10-15T09:40:09-04:00</updated>
+  <updated>2013-10-30T12:58:48-04:00</updated>
   <id>http://richardsonjm.github.io/</id>
   <author>
     <name><![CDATA[Your Name]]></name>
@@ -12,6 +12,90 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[mta_status gem]]></title>
+    <link href="http://richardsonjm.github.io/blog/2013/10/29/mta-status-gem/"/>
+    <updated>2013-10-29T23:29:00-04:00</updated>
+    <id>http://richardsonjm.github.io/blog/2013/10/29/mta-status-gem</id>
+    <content type="html"><![CDATA[<h3>Should I run for the train?</h3>
+
+<p><img src="http://farm8.staticflickr.com/7324/10576880723_3ae95bb861_o.jpg" alt="parkour" /></p>
+
+<p>Whenver I need to catch the <a href="http://lirr42.mta.info/">LIRR</a>, I usually end up running. And If I&rsquo;m dodging and weaving around the fine people of NYC, I hope there&rsquo;s a train warmed up and ready to go when I get to the station. Given that I spend so much time in the terminal (&hellip;on my computer) these days, I decided to build a gem that makes sure everything is ok with my train before the race begins by pulling the latest train service status data off the MTA webiste.</p>
+
+<p>The gem can be installed by typing the following into your terminal:</p>
+
+<pre><code>gem install mta_status
+</code></pre>
+
+<p>Type in the following command into your terminal and you will get the subway service status by default.</p>
+
+<pre><code>mta_status 
+</code></pre>
+
+<p>If you type lirr, metro-north, or a host of other related terms after the mta_status command you should get the service status for that particular branch of the MTA. For example, the following will get you the service status for the LIRR.</p>
+
+<pre><code>mta_status lirr 
+</code></pre>
+
+<h3>Data source</h3>
+
+<p>The link to the train service <a href="http://web.mta.info/status/serviceStatus.txt">status</a> page can be found on the MTA [MTA] developer <a href="http://web.mta.info/developers/download.html">downloads</a> page.</p>
+
+<p>In addition to service status, the developer site also has links to schedules and route information all meant to follow the General Transit Feed Specification (GTFS) <a href="https://developers.google.com/transit/gtfs/">specs</a>. In other words, if you build something for one transit system, it will likely be transferrable to one of these <a href="https://code.google.com/p/googletransitdatafeed/wiki/PublicFeeds">other</a> transits systems in the US and through the rest of the world.</p>
+
+<h3>Implementation</h3>
+
+<p>The MTA service <a href="http://web.mta.info/status/serviceStatus.txt">status</a> page is a text file with no css. In my previous (and limited) expierence with Nokogiri I had searched for nodes using css, so with this page I had to search for nodes using xpath.</p>
+
+<pre><code># xpath
+@doc.xpath("//name").collect do |name|
+  name.children.text 
+
+# css
+student_page.css('div.social-icons a').collect do |link|
+    link.attr('href')
+</code></pre>
+
+<p>The page was layed out well so it didn&rsquo;t take too long to figure out how to get xpath to find what I was looking for. Let me rephrase that, the page was pretty well laid out expcept for this:</p>
+
+<pre><code>&lt;text&gt;
+                &amp;lt;span class="TitlePlannedWork" &amp;gt;Planned Work&amp;lt;/span&amp;gt;
+                 &amp;lt;span class="DateStyle"&amp;gt;
+                &amp;amp;nbsp;Posted:&amp;amp;nbsp;10/29/2013&amp;amp;nbsp; 9:43AM
+                &amp;lt;/span&amp;gt;&amp;lt;br/&amp;gt;&amp;lt;br/&amp;gt;
+              &amp;lt;a class="plannedWorkDetailLink" onclick=ShowHide(50159);&amp;gt;
+&amp;lt;b&amp;gt;Busing at Melrose and Tremont Stations
+&amp;lt;/a&amp;gt;&amp;lt;br/&amp;gt;&amp;lt;br/&amp;gt;&amp;lt;div id= 50159 class="plannedWorkDetail" &amp;gt;&amp;lt;/b&amp;gt;Beginning Aug 19 until further notice
+&amp;lt;br&amp;gt;
+&amp;lt;br&amp;gt;As part of the Bronx Right-of-Way Improvements Project, substitute bus service
+&amp;lt;br&amp;gt;will be provided at Melrose and Tremont Stations in both directions.  Buses will
+&amp;lt;br&amp;gt;connect with trains at Fordham Station. Please visit &amp;lt;a href=http://new.mta.info/mnr target=_blank&amp;gt;&amp;lt;font color=#0000FF&amp;gt;&amp;lt;b&amp;gt;&amp;lt;u&amp;gt;mta.info&amp;lt;/u&amp;gt;&amp;lt;/b&amp;gt;&amp;lt;/font&amp;gt;&amp;lt;/a&amp;gt; for further details.
+&amp;lt;br&amp;gt;
+&amp;lt;br&amp;gt;Weekday Bus Schedule  |  &amp;lt;a href=http://advisory.mtanyct.info/pdf_files/HARLEM_08-19-2013%20FINAL%20Buses%20Only%20Mon-Fri.pdf target=_blank&amp;gt;&amp;lt;font color=#0000FF&amp;gt;&amp;lt;b&amp;gt;&amp;lt;u&amp;gt;pdf&amp;lt;/u&amp;gt;&amp;lt;/b&amp;gt;&amp;lt;/font&amp;gt;&amp;lt;/a&amp;gt;
+&amp;lt;br&amp;gt;Weekend Bus Schedule  |  &amp;lt;a href=http://advisory.mtanyct.info/pdf_files/HARLEM_08-19-2013%20FINAL%20Buses%20Only%20Sat-Sun.pdf target=_blank&amp;gt;&amp;lt;font color=#0000FF&amp;gt;&amp;lt;b&amp;gt;&amp;lt;u&amp;gt;pdf&amp;lt;/u&amp;gt;&amp;lt;/b&amp;gt;&amp;lt;/font&amp;gt;&amp;lt;/a&amp;gt;
+&amp;lt;br&amp;gt;&amp;lt;b&amp;gt;
+&amp;lt;br&amp;gt;&amp;lt;/div&amp;gt;&amp;lt;/b&amp;gt;&amp;lt;br/&amp;gt;
+            &amp;lt;br/&amp;gt;&amp;lt;br/&amp;gt;
+          &lt;/text&gt;
+</code></pre>
+
+<p>This is the &ldquo;text&rdquo; that explains the service disruption. My next task is to make sense of this mess and then potentially work it into a new version of the gem. Only issue there is the more features I add, the less useful the gem could become, especially since the service change information is often confusing.</p>
+
+<h3>TODO</h3>
+
+<p>I get the following gem related error everytime the gem runs. It doesn&rsquo;t seem to effect how the gem runs, but it is ugly.</p>
+
+<pre><code>WARN: Unresolved specs during Gem::Specification.reset:
+    mini_portile (~&gt; 0.5.0)
+WARN: Clearing out unresolved specs.
+Please report a bug if this causes problems.
+</code></pre>
+
+<p>Also, there&rsquo;s a ton of information on the bus system that I didn&rsquo;t incorporate and also some information on the bridges and tunnels operated by the MTA.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[anal v methodical]]></title>
