@@ -1,0 +1,241 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>seeds - My Octopress Blog</title>
+	<meta name="author" content="Your Name">
+
+	
+	<meta name="description" content="Background: ADK 46-R The ADK 46ers are a set of 46 mountains in upstate NY higher than 4000 feet. If you climb all of these mountains, keep records &hellip;">
+	
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+	<link href="/atom.xml" rel="alternate" title="My Octopress Blog" type="application/atom+xml">
+	<link rel="canonical" href="">
+	<link href="/favicon.png" rel="shortcut icon">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	<script async="true" src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+	
+</head>
+
+
+<body>
+	<header id="header" class="inner"><h1><a href="/">My Octopress Blog</a></h1>
+<nav id="main-nav"><ul class="main">
+	<li><a href="/">Blog</a></li>
+	<li><a href="/blog/archives">Archives</a></li>
+</ul>
+</nav>
+<nav id="mobile-nav">
+	<div class="alignleft menu">
+		<a class="button">Menu</a>
+		<div class="container"><ul class="main">
+	<li><a href="/">Blog</a></li>
+	<li><a href="/blog/archives">Archives</a></li>
+</ul>
+</div>
+	</div>
+	<div class="alignright search">
+		<a class="button"></a>
+		<div class="container">
+			<form action="http://google.com/search" method="get">
+				<input type="text" name="q" results="0">
+				<input type="hidden" name="q" value="site:richardsonjm.github.io">
+			</form>
+		</div>
+	</div>
+</nav>
+<nav id="sub-nav" class="alignright">
+	<div class="social">
+		
+		
+		
+		
+    
+		
+		
+		
+		
+		
+		<a class="rss" href="/atom.xml" title="RSS">RSS</a>
+		
+    
+	</div>
+	<form class="search" action="http://google.com/search" method="get">
+		<input class="alignright" type="text" name="q" results="0">
+		<input type="hidden" name="q" value="site:richardsonjm.github.io">
+	</form>
+</nav>
+
+</header>
+	
+		
+	
+	<div id="content" class="inner"><article class="post">
+	<h2 class="title">Seeds</h2>
+	<div class="entry-content"><p><img src="http://www.adirondack.net/tour/hike/sm-46r.jpg" alt="ADK 46R Logo" /></p>
+
+<h3>Background: ADK 46-R</h3>
+
+<p>The ADK 46ers are a set of 46 mountains in upstate NY higher than 4000 feet. If you climb all of these mountains, keep records of your climbs, and then submit those records <a href="http://www.adk46er.org/">here</a>, you can become a member of the 46-R club</p>
+
+<h3>ADK 46-R CLI</h3>
+
+<p>This project started as a Command Line Interface (CLI) that scrapped the following two sites for data on the mountains in the 46-R group and the associated hikes.</p>
+
+<p><a href="http://www.adk46er.org/peaks/index.html">http://www.adk46er.org/peaks/index.html</a></p>
+
+<p><a href="http://www.everytrail.com/guide/adirondack-46er-list">http://www.everytrail.com/guide/adirondack-46er-list</a></p>
+
+<p>The scrape loaded all the necessary data into a database and the CLI calls from that database when responding to user commands. The CLIT outputs the data in the following format:</p>
+
+<pre><code>47 mountains loaded.
+23 hikes loaded
+Type command (browse, show, help, or exit):
+$ show
+Enter mountain rank or ANY PART of mountain name: 
+$ Marcy
+Mountain(s)
+Name: Marcy
+Rank: 1
+Elevation: 5344
+Hike Name: Mt. Skylight, Mt. Marcy, and Gray Peak
+URL: http://www.everytrail.com/guide/mt-skylight-mt-marcy-and-gray-peak
+Difficulty: Difficult:
+Miles: 18
+Time: Full-day
+Description: Two enormous bald summit 46ers and a trailess Gray Peak in a day loop hike form Heart Lake.  A state highpoint as well.
+Type command (browse, show, help, or exit):
+</code></pre>
+
+<h3>forty-sixer-on-rails</h3>
+
+<p>The next iteration of this project was using this data as the basis for a rails application that would allow users to view the mountains in the group, view the hikes in which those mountains could be hiked, and then keep track of their progress towards the goal of becoming an ADK 46-R. Before setting up the routes, controllers, views or any of that other good rails stuff, I needed to figure out how to get this data from my CLI applicaiton into my new rails application.</p>
+
+<p>I didn&rsquo;t want to just add the table to the rails database because I wanted the database to be integrated into ActiveRecord and the models I had designed for the application. I also didn&rsquo;t want to hand write a massive seed file to get all this data into the database in my rails application.</p>
+
+<h3>Export to CSV</h3>
+
+<p>What I ended up doing was exporting the table from database that contained the scrapped data as a csv file and importating that csv file into the mountains and hikes tables in the rails database using the following commands:</p>
+
+<pre><code>sqlite3 forty_sixer.db 
+sqlite&gt; .mode csv
+sqlite&gt; .output mountains.csv
+sqlite&gt; SELECT * FROM mountains;
+</code></pre>
+
+<p>I did this step for both the moutains and hikes tables which resulted in following two files: moutnains.csv and hikes.csv. I then went to the database in the forty-sixer rails project and did the following to import these two tables:</p>
+
+<pre><code>sqlite3 development.sqlite3
+sqlite&gt; .separator ",""
+sqlite&gt; .import mountains.csv mountains
+sqlite&gt; .import hikes.csv hikes
+</code></pre>
+
+<p>The <code>.seperator</code> command was an important step in getting the sqlite3 to undestanding the format of the data I was importing. Another important step was <em>not</em> using MS Excel to open and manipulate the csv file before I tried importating the csv file into the database. Initially I had opened the csv file in Excel and added to columns for created_at and updated_at in order for the columns in the csv file to line up with the columns in the rails database. Long story short, this did not work. What I ended up doing was removing the timestamps from the rails database and remigrating before I imported the csv file so that the columns in the rails databse and the CLI database were identical.</p>
+
+<h3>seed_dump</h3>
+
+<p>The rails application database constantly gets changed during development often getting dropped or reset. I wanted a way to make a seed file out of the data I had just worked so hard to get into my database. Here is where the ruby gem <a href="https://github.com/rroblak/seed_dump">seed_dump</a> saved the day.</p>
+
+<p>Once installed in your gemfile, the following command:</p>
+
+<pre><code>rake db:seed:dump
+</code></pre>
+
+<p>will make seed files out of all the tables in your rails database. In other words, it took 47 rows (MacNaughton mountain is not on the official list, but its over 4000 ft) of this from the table</p>
+
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th> rank</th>
+<th> name      </th>
+<th> height </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1 </td>
+<td> 1   </td>
+<td> Marcy     </td>
+<td> 5344</td>
+</tr>
+<tr>
+<td>1 </td>
+<td> 2   </td>
+<td> Algonquin </td>
+<td> 5114</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>and turned it into 47 lines of ruby code in my seed file that looked like this</p>
+
+<pre><code>Mountain.create!([
+  { :rank =&gt; 1, :name =&gt; "Marcy", :height =&gt; 5344, :trek_id =&gt; 14 },
+  { :rank =&gt; 2, :name =&gt; "Algonquin", :height =&gt; 5114, :trek_id =&gt; 7 },
+</code></pre>
+
+<p>There are more elegent solution to this problem. For example, I could have added the scrape logic from the CLI application into the rails application and done the scrape directly from the rails applciation. On second thought, that would have been a lot easier. That&rsquo;s what I get for working on this on the LIRR with no interent connection. At least now I have a backup plan next time I lose access to the internet or the data I need is only availabe through an existing databse.</p>
+</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-11-14T09:15:00-05:00" pubdate data-updated="true">Nov 14<span>th</span>, 2013</time></div>
+	<div class="tags">
+
+</div>
+	
+</div>
+</article>
+
+	<div class="share">
+	<div class="addthis_toolbox addthis_default_style ">
+		
+		
+		<a class="addthis_button_tweet"></a>
+		
+		
+		
+	</div>
+	
+</div>
+
+
+</div>
+	<footer id="footer" class="inner">Copyright &copy; 2013
+
+    Your Name
+
+</footer>
+	<script src="/javascripts/slash.js"></script>
+<script src="/javascripts/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+	$('.fancybox').fancybox();
+})(jQuery);
+</script> <!-- Delete or comment this line to disable Fancybox -->
+
+
+
+
+
+
+</body>
+</html>
