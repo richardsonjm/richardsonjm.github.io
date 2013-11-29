@@ -1,0 +1,195 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>shards - My Octopress Blog</title>
+	<meta name="author" content="Your Name">
+
+	
+	<meta name="description" content="What we wanted to do Create a bike rake availability prediction model for Citibike in NYC based on historical data station data. What we had A &hellip;">
+	
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+	<link href="/atom.xml" rel="alternate" title="My Octopress Blog" type="application/atom+xml">
+	<link rel="canonical" href="">
+	<link href="/favicon.png" rel="shortcut icon">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	<script async="true" src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+	
+</head>
+
+
+<body>
+	<header id="header" class="inner"><h1><a href="/">My Octopress Blog</a></h1>
+<nav id="main-nav"><ul class="main">
+	<li><a href="/">Blog</a></li>
+	<li><a href="/blog/archives">Archives</a></li>
+</ul>
+</nav>
+<nav id="mobile-nav">
+	<div class="alignleft menu">
+		<a class="button">Menu</a>
+		<div class="container"><ul class="main">
+	<li><a href="/">Blog</a></li>
+	<li><a href="/blog/archives">Archives</a></li>
+</ul>
+</div>
+	</div>
+	<div class="alignright search">
+		<a class="button"></a>
+		<div class="container">
+			<form action="http://google.com/search" method="get">
+				<input type="text" name="q" results="0">
+				<input type="hidden" name="q" value="site:richardsonjm.github.io">
+			</form>
+		</div>
+	</div>
+</nav>
+<nav id="sub-nav" class="alignright">
+	<div class="social">
+		
+		
+		
+		
+    
+		
+		
+		
+		
+		
+		<a class="rss" href="/atom.xml" title="RSS">RSS</a>
+		
+    
+	</div>
+	<form class="search" action="http://google.com/search" method="get">
+		<input class="alignright" type="text" name="q" results="0">
+		<input type="hidden" name="q" value="site:richardsonjm.github.io">
+	</form>
+</nav>
+
+</header>
+	
+		
+	
+	<div id="content" class="inner"><article class="post">
+	<h2 class="title">Shards</h2>
+	<div class="entry-content"><p><img src="http://citibikenyc.com/assets/images/header-logo.png" alt="citibike rider" /></p>
+
+<h3>What we wanted to do</h3>
+
+<p>Create a bike rake availability prediction model for Citibike in NYC based on historical data station data.</p>
+
+<h3>What we had</h3>
+
+<p>A snapshot of every station over a two and a half month period (81 days). 18K snapshots of each of the 331 stations stored in in json format as text files.</p>
+
+<pre><code>def parse_filename(file_name)
+  DateTime.parse(file_name.gsub("citi_", "").gsub("_","")).to_s 
+end
+</code></pre>
+
+<h3>To shard or not to shard</h3>
+
+<p>With 331 stations being queried every 5 minutes (228), this meant we needed to create over 75K records a day. Over the 81 days we had 6.1MM records. We had two options for how to store this data. First, we could make a single table with 6.1MM rows. The second option, and the one we choose given our use case, was to &lsquo;shard&rsquo; the database into 331 seperate station tables that would each contain 18K records.</p>
+
+<h3>Our model</h3>
+
+<p>Our <a href="http://66.228.33.47/">model</a> takes the users current location and their desired destination and provides the nearest citibike stations to both the origin and destination. It then goes back in time and checks the bike and rack availability at those stations in the past, and uses that information to predict the availiblity of bikes or rack space today.</p>
+
+<p>In order to accomplish what we needed to do we had to go be able to quickly look up a history for each station. Instead of rooting through a 6MM recond long table, our model instead gets the necessary station ids and then queries the related tables which are considerabley smaller.</p>
+
+<pre><code>def origin_history(min)
+  origin_stations.collect do |station| 
+    cmd= "SELECT * FROM station_#{station.station_id} 
+    WHERE station_time = \'#{rollback(56, min).to_s[0..18]}\'"
+    connection.execute(cmd).field_values("bikes").join
+  end
+end
+</code></pre>
+
+<p>As you can see, our stations tables are not ActiveRecord models. Instead we had to write custom migrations to create the tables</p>
+
+<pre><code>def up
+  Station.import
+    Station.all.each do |station|
+      create_table "station_#{station.station_id}" do |t|
+        t.integer :bikes
+        t.integer :free
+        t.datetime :station_time
+      end
+    end
+  end
+end
+</code></pre>
+
+<p>and custom SQL to write and then read from these tables.</p>
+
+<pre><code>def build_row(number, bikes, free, station_time)
+  begin
+   cmd = "INSERT INTO station_#{number} (bikes, free, station_time) VALUES (?,?,?)"
+   connection.execute(cmd)
+  rescue
+  end 
+</code></pre>
+
+<p>This was faster than dealing with hundresds of individual station models and then creating an instance for each station everytime we needed to write or read out of the database. It was also considerabley more cumbersome. For example, when we changed from sqlite to prostgres, we had to change all of our SQL statements so that they would work with the new databse.</p>
+</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-11-29T11:40:00-05:00" pubdate data-updated="true">Nov 29<span>th</span>, 2013</time></div>
+	<div class="tags">
+
+</div>
+	
+</div>
+</article>
+
+	<div class="share">
+	<div class="addthis_toolbox addthis_default_style ">
+		
+		
+		<a class="addthis_button_tweet"></a>
+		
+		
+		
+	</div>
+	
+</div>
+
+
+</div>
+	<footer id="footer" class="inner">Copyright &copy; 2013
+
+    Your Name
+
+</footer>
+	<script src="/javascripts/slash.js"></script>
+<script src="/javascripts/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+	$('.fancybox').fancybox();
+})(jQuery);
+</script> <!-- Delete or comment this line to disable Fancybox -->
+
+
+
+
+
+
+</body>
+</html>

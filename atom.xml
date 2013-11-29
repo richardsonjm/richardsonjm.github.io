@@ -4,7 +4,7 @@
   <title><![CDATA[My Octopress Blog]]></title>
   <link href="http://richardsonjm.github.io/atom.xml" rel="self"/>
   <link href="http://richardsonjm.github.io/"/>
-  <updated>2013-11-15T09:26:58-05:00</updated>
+  <updated>2013-11-29T12:12:21-05:00</updated>
   <id>http://richardsonjm.github.io/</id>
   <author>
     <name><![CDATA[Your Name]]></name>
@@ -12,6 +12,74 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[shards]]></title>
+    <link href="http://richardsonjm.github.io/blog/2013/11/29/shards/"/>
+    <updated>2013-11-29T11:40:00-05:00</updated>
+    <id>http://richardsonjm.github.io/blog/2013/11/29/shards</id>
+    <content type="html"><![CDATA[<p><img src="http://citibikenyc.com/assets/images/header-logo.png" alt="citibike rider" /></p>
+
+<h3>What we wanted to do</h3>
+
+<p>Create a bike rake availability prediction model for Citibike in NYC based on historical data station data.</p>
+
+<h3>What we had</h3>
+
+<p>A snapshot of every station over a two and a half month period (81 days). 18K snapshots of each of the 331 stations stored in in json format as text files.</p>
+
+<pre><code>def parse_filename(file_name)
+  DateTime.parse(file_name.gsub("citi_", "").gsub("_","")).to_s 
+end
+</code></pre>
+
+<h3>To shard or not to shard</h3>
+
+<p>With 331 stations being queried every 5 minutes (228), this meant we needed to create over 75K records a day. Over the 81 days we had 6.1MM records. We had two options for how to store this data. First, we could make a single table with 6.1MM rows. The second option, and the one we choose given our use case, was to &lsquo;shard&rsquo; the database into 331 seperate station tables that would each contain 18K records.</p>
+
+<h3>Our model</h3>
+
+<p>Our <a href="http://66.228.33.47/">model</a> takes the users current location and their desired destination and provides the nearest citibike stations to both the origin and destination. It then goes back in time and checks the bike and rack availability at those stations in the past, and uses that information to predict the availiblity of bikes or rack space today.</p>
+
+<p>In order to accomplish what we needed to do we had to go be able to quickly look up a history for each station. Instead of rooting through a 6MM recond long table, our model instead gets the necessary station ids and then queries the related tables which are considerabley smaller.</p>
+
+<pre><code>def origin_history(min)
+  origin_stations.collect do |station| 
+    cmd= "SELECT * FROM station_#{station.station_id} 
+    WHERE station_time = \'#{rollback(56, min).to_s[0..18]}\'"
+    connection.execute(cmd).field_values("bikes").join
+  end
+end
+</code></pre>
+
+<p>As you can see, our stations tables are not ActiveRecord models. Instead we had to write custom migrations to create the tables</p>
+
+<pre><code>def up
+  Station.import
+    Station.all.each do |station|
+      create_table "station_#{station.station_id}" do |t|
+        t.integer :bikes
+        t.integer :free
+        t.datetime :station_time
+      end
+    end
+  end
+end
+</code></pre>
+
+<p>and custom SQL to write and then read from these tables.</p>
+
+<pre><code>def build_row(number, bikes, free, station_time)
+  begin
+   cmd = "INSERT INTO station_#{number} (bikes, free, station_time) VALUES (?,?,?)"
+   connection.execute(cmd)
+  rescue
+  end 
+</code></pre>
+
+<p>This was faster than dealing with hundresds of individual station models and then creating an instance for each station everytime we needed to write or read out of the database. It was also considerabley more cumbersome. For example, when we changed from sqlite to prostgres, we had to change all of our SQL statements so that they would work with the new databse.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[seeds]]></title>
