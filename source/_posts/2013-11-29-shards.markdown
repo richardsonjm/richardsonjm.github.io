@@ -1,0 +1,69 @@
+---
+layout: post
+title: "shards"
+date: 2013-11-29 11:40
+comments: true
+categories: 
+---
+![citibike rider](http://citibikenyc.com/assets/images/header-logo.png)
+###What we wanted to do
+Create a bike rake availability prediction model for Citibike in NYC based on historical data station.
+
+###What we had
+A snapshot of every station over a two and a half month period (81 days). This amounted to 18K snapshots of each of the 331 stations stored in json format as text files. 
+
+  	def parse_filename(file_name)
+      DateTime.parse(file_name.gsub("citi_", "").gsub("_","")).to_s 
+  	end
+
+
+###To shard or not to shard
+With 331 stations being queried every 5 minutes (228 times a day), this meant we needed to create over 75K records for each day that we had data. With 81 days of data we ended up with approximately 6.1MM records. We had two options for how to store this data. First, we could make a single table with 6.1MM rows. The second option (which we chose given our use case) was to 'shard' the database into 331 seperate station tables that would each contain 18K records. 
+
+###Our model
+Our [model](http://66.228.33.47/) takes the users current location and their desired destination and provides the nearest citibike stations to both the origin and destination. It then goes back in time and checks the bike and rack availability at those stations in the past, and uses that information to predict the availiblity of bikes or rack space today. 
+
+We needed to be able to quickly look up a history for each station. Instead of rooting through a 6MM rows in a single table, our model instead gets the necessary station ids and then queries the related tables which are considerabley smaller. 
+
+	def origin_history(min)
+      origin_stations.collect do |station| 
+        cmd= "SELECT * FROM station_#{station.station_id} 
+        WHERE station_time = \'#{rollback(56, min).to_s[0..18]}\'"
+        connection.execute(cmd).field_values("bikes").join
+      end
+  	end
+
+As you can see, our stations tables are not ActiveRecord models. Instead we had to write custom migrations to create the tables
+
+  	def up
+      Station.import
+        Station.all.each do |station|
+          create_table "station_#{station.station_id}" do |t|
+            t.integer :bikes
+            t.integer :free
+            t.datetime :station_time
+          end
+        end
+  	  end
+	end
+
+
+and custom SQL to write and then read from these tables. 
+
+	def build_row(number, bikes, free, station_time)
+      begin
+       cmd = "INSERT INTO station_#{number} (bikes, free, station_time) VALUES (?,?,?)"
+       connection.execute(cmd)
+      rescue
+      end 
+
+This was faster than dealing with hundreds of individual station models and then creating an instance for each station everytime we needed to write or read out of the database. It was also considerabley more cumbersome. For example, when we changed the database from sqlite to prostgres, we had to change all of our SQL statements so that they would work with the new database. 
+
+###ToDo
+Next steps are to fix the prediciton model. Currently we are predicting current availability based soley on one date in the past. We also need to set up a reaccuring task to seed our database with current data. 
+
+
+
+
+
+
