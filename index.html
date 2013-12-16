@@ -7,7 +7,7 @@
 	<meta name="author" content="John Richardson">
 
 	
-	<meta name="description" content="What we wanted to do Create a bike rake availability prediction model for Citibike in NYC based on historical data station data. What we had A &hellip;">
+	<meta name="description" content="Background Last week I had the pleasure of working with @j_scag_, @jamesjtong, @ivanbrennan, and @ahimmelstoss on this amazing gametable application &hellip;">
 	
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
@@ -83,6 +83,141 @@
     <article class="post">
 	<h2 class="title">
 		
+		<a href="/blog/2013/12/16/dice/">
+		
+			Dice</a>
+	</h2>
+	<div class="entry-content">
+		<h4>Background</h4>
+
+<p>Last week I had the pleasure of working with <a href="twitter.com/@j_scag_">@j_scag_</a>, <a href="twitter.com/jamesjtong">@jamesjtong</a>, <a href="twitter.com/ivanbrennan">@ivanbrennan</a>, and <a href="twitter.com/ahimmelstoss">@ahimmelstoss</a> on this <a href="gametable.co">amazing gametable</a> application. This rails based gaming platform lets users play chess, checkers, backgammon and chinese-checkers online with friends far and wide.</p>
+
+<p>The game play is made possible by the <a href="https://github.com/chrismccord/sync">Sync</a> gem <a href="http://pusher.com/">Pusher</a>. Sync and Pusher allow for realtime refreshing and updating of partials on a given game page so that every time a user moves a game piece or enters text into the chat, those movements/chats can be seen by other players of the game on different computers.</p>
+
+<p>For the backgammon game (and future games that require dice), we needed to implement a way for players to roll dice. We implemented this functionality using the existing chat functionality that had already been built.</p>
+
+<h4>Chat</h4>
+
+<p>The chat function routed messages to the following action on the MessagesController:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>def create
+</span><span class='line'>  @game = Game.find_by(secure_room_code: params[:secure_room_code])
+</span><span class='line'>  @message = @game.messages.create(:content =&gt; params[:message][:content],
+</span><span class='line'>                                 :name =&gt; params[:message][:name],
+</span><span class='line'>                                 :source =&gt; "user")
+</span><span class='line'>  sync_new @message, scope: @game
+</span><span class='line'>  redirect_to game_path(@message.game.secure_room_code)
+</span><span class='line'>end</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This action creates a new message with the desired contents and then syncs those contents across the different users of the game. When the message box partial is refreshed, the new message that was created by the action is now included among the messages for that game that get displayed in the message box to the right of the game board.</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>  &lt;div class="messages-box"&gt;
+</span><span class='line'>    &lt;ul id="chat"&gt;
+</span><span class='line'>      &lt;% @game.messages.each do |message| %&gt;
+</span><span class='line'>        &lt;%= sync partial: 'message', resource: message %&gt;
+</span><span class='line'>      &lt;% end %&gt;
+</span><span class='line'>      &lt;%= sync_new partial: 'message', resource: Message.new, scope: @game %&gt;
+</span><span class='line'>    &lt;/ul&gt;
+</span><span class='line'>  &lt;/div&gt;</span></code></pre></td></tr></table></div></figure>
+
+
+<h4>Dice</h4>
+
+<p>Similarly, the dice functionality routed to the dice action on the MessagesController:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>def dice
+</span><span class='line'>  @game = Game.find_by(secure_room_code: params[:secure_room_code])
+</span><span class='line'>  @message = @game.messages.create(:content =&gt; "#{rand(6)+1} #{rand(6)+1}",
+</span><span class='line'>                                 :name =&gt; "#{params[:name]} rolled",
+</span><span class='line'>                                 :source =&gt; "computer")
+</span><span class='line'>  sync_new @message, scope: @game
+</span><span class='line'>  redirect_to game_path(@message.game.secure_room_code)
+</span><span class='line'>end
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This action is almost indentical to the create action save for two importance differences. First, the content is set to two randomly genereated numbers between 1 and 6 (<code>#{rand(6)+1} #{rand(6)+1}</code>). Second, the sources is taged as computer, instead of user <code>:source =&gt; "computer"</code> .</p>
+
+<p><img src="../images/backgammon_board.png" alt="backgammon_board" /></p>
+
+<h4>Authentication</h4>
+
+<p>Given that our platform had no user authentication, we needed a way to make sure that users were actually rolling the dice instead of just changing their chat name and entering the dice rolls by hand. To accomplish this, we put some logic in the chat message partial that colored the text green when the source was the computer (i.e., dice roll) and left the text uncolored when the source was one of the users on the system. The logic in the partial for this is as follows:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'> &lt;li &lt;% if message.source=="computer" %&gt;
+</span><span class='line'>  style="color: #2C6043;"
+</span><span class='line'>  &lt;% end %&gt;
+</span><span class='line'>  &gt;&lt;strong&gt;&lt;%= message.name %&gt;&lt;/strong&gt;: &lt;%= message.content %&gt;&lt;/li&gt;
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p></p>
+
+<p>Somthing you may notice here is the strange line breaks within the opening <code>&lt;li&gt;</code> tag. This was necessary because when the erb code logic that checked for the source was all on one line it did not render appropriately.</p>
+
+<h4>Final thoughts</h4>
+
+<p>I really like how this dice functionality fits in with the existing messaging framework built into the application. It fits in with other simple but elegent solutions in this app like using secure game room codes <code> http://gametable.co/games/56b3f2d83c82304ce036cec5c97435d7</code>instead of users. The next step is to add some new games that need dice.</p>
+
+		
+		
+	</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-12-16T15:07:00-05:00" pubdate data-updated="true">Dec 16<span>th</span>, 2013</time></div>
+	<div class="tags">
+
+</div>
+	
+</div>
+</article>
+
+
+    <article class="post">
+	<h2 class="title">
+		
 		<a href="/blog/2013/11/29/shards/">
 		
 			Shards</a>
@@ -92,11 +227,11 @@
 
 <h3>What we wanted to do</h3>
 
-<p>Create a bike rake availability prediction model for Citibike in NYC based on historical data station data.</p>
+<p>Create a bike rake availability prediction model for Citibike in NYC based on historical data station.</p>
 
 <h3>What we had</h3>
 
-<p>A snapshot of every station over a two and a half month period (81 days). 18K snapshots of each of the 331 stations stored in in json format as text files.</p>
+<p>A snapshot of every station over a two and a half month period (81 days). This amounted to 18K snapshots of each of the 331 stations stored in json format as text files.</p>
 
 <pre><code>def parse_filename(file_name)
   DateTime.parse(file_name.gsub("citi_", "").gsub("_","")).to_s 
@@ -105,13 +240,13 @@ end
 
 <h3>To shard or not to shard</h3>
 
-<p>With 331 stations being queried every 5 minutes (228), this meant we needed to create over 75K records a day. Over the 81 days we had 6.1MM records. We had two options for how to store this data. First, we could make a single table with 6.1MM rows. The second option, and the one we choose given our use case, was to &lsquo;shard&rsquo; the database into 331 seperate station tables that would each contain 18K records.</p>
+<p>With 331 stations being queried every 5 minutes (228 times a day), this meant we needed to create over 75K records for each day that we had data. With 81 days of data we ended up with approximately 6.1MM records. We had two options for how to store this data. First, we could make a single table with 6.1MM rows. The second option (which we chose given our use case) was to &lsquo;shard&rsquo; the database into 331 seperate station tables that would each contain 18K records.</p>
 
 <h3>Our model</h3>
 
 <p>Our <a href="http://66.228.33.47/">model</a> takes the users current location and their desired destination and provides the nearest citibike stations to both the origin and destination. It then goes back in time and checks the bike and rack availability at those stations in the past, and uses that information to predict the availiblity of bikes or rack space today.</p>
 
-<p>In order to accomplish what we needed to do we had to go be able to quickly look up a history for each station. Instead of rooting through a 6MM recond long table, our model instead gets the necessary station ids and then queries the related tables which are considerabley smaller.</p>
+<p>We needed to be able to quickly look up a history for each station. Instead of rooting through a 6MM rows in a single table, our model instead gets the necessary station ids and then queries the related tables which are considerabley smaller.</p>
 
 <pre><code>def origin_history(min)
   origin_stations.collect do |station| 
@@ -147,7 +282,11 @@ end
   end 
 </code></pre>
 
-<p>This was faster than dealing with hundresds of individual station models and then creating an instance for each station everytime we needed to write or read out of the database. It was also considerabley more cumbersome. For example, when we changed from sqlite to prostgres, we had to change all of our SQL statements so that they would work with the new databse.</p>
+<p>This was faster than dealing with hundreds of individual station models and then creating an instance for each station everytime we needed to write or read out of the database. It was also considerabley more cumbersome. For example, when we changed the database from sqlite to prostgres, we had to change all of our SQL statements so that they would work with the new database.</p>
+
+<h3>ToDo</h3>
+
+<p>Next steps are to fix the prediciton model. Currently we are predicting current availability based soley on one date in the past. We also need to set up a reaccuring task to seed our database with current data.</p>
 
 		
 		
