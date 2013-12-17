@@ -7,7 +7,7 @@ categories:
 ---
 
 ####Background
-Last week I had the pleasure of working with [@j_scag_](twitter.com/@j_scag_), [@jamesjtong](twitter.com/jamesjtong), [@ivanbrennan](twitter.com/ivanbrennan), and [@ahimmelstoss](twitter.com/ahimmelstoss) on this [amazing gametable](gametable.co) application. This rails based gaming platform lets users play chess, checkers, backgammon and chinese-checkers online with friends far and wide. 
+Last week I had the pleasure of working with [@j_scag_](https://twitter.com/@j_scag_), [@jamesjtong](https://twitter.com/jamesjtong), [@ivanbrennan](https://twitter.com/ivanbrennan), and [@ahimmelstoss](https://twitter.com/ahimmelstoss) on this [amazing gametable](http://gametable.co/) application. This rails based gaming platform lets users play chess, checkers, backgammon and chinese-checkers online with friends far and wide. 
 
 The game play is made possible by the [Sync](https://github.com/chrismccord/sync) gem [Pusher](http://pusher.com/). Sync and Pusher allow for realtime refreshing and updating of partials on a given game page so that every time a user moves a game piece or enters text into the chat, those movements/chats can be seen by other players of the game on different computers.  
 
